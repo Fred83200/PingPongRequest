@@ -4,6 +4,9 @@ trigger:
 pool:
   vmImage: 'ubuntu-latest'
 
+variables:
+  buildConfiguration: 'Release'
+
 steps:
 - task: UseDotNet@2
   inputs:
@@ -11,13 +14,28 @@ steps:
     version: '8.x'
     installationPath: $(Agent.ToolsDirectory)/dotnet
 
-- script: dotnet build src/service.csproj --configuration Release
+- script: dotnet restore src/service.csproj
+  displayName: 'Restore Dependencies'
+
+- script: dotnet build src/service.csproj --configuration $(buildConfiguration)
   displayName: 'Build Service'
 
-- script: dotnet test tests/service-test.csproj --configuration Release
+- script: dotnet test tests/service-test.csproj --configuration $(buildConfiguration) --no-build --logger:trx
   displayName: 'Run Unit Tests'
+
+- task: PublishTestResults@2
+  inputs:
+    testResultsFormat: 'VSTest'
+    testResultsFiles: '**/*.trx'
+    searchFolder: '$(System.DefaultWorkingDirectory)'
+  displayName: 'Publish Test Results'
+
+- script: dotnet publish src/service.csproj --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)
+  displayName: 'Publish Service'
 
 - task: PublishBuildArtifacts@1
   inputs:
     PathtoPublish: $(Build.ArtifactStagingDirectory)
-    ArtifactName: drop
+    ArtifactName: service
+    publishLocation: 'Container'
+  displayName: 'Publish Build Artifacts'
