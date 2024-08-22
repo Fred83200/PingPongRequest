@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  cosmosdb-emulator:
+    image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
+    environment:
+      AZURE_COSMOS_EMULATOR_PARTITION_COUNT: 1
+      AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE: "true"
+    ports:
+      - "8081:8081" # Endpoint port
+      - "10250:10250" # Direct TCP port
+    volumes:
+      - cosmosdbdata:/data
+    networks:
+      - mynetwork
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5000:8080"
+    depends_on:
+      - cosmosdb-emulator
+    environment:
+      - CosmosDb__EndpointUri=https://localhost:8081
+      - CosmosDb__PrimaryKey=C2y6yDjf5/R+ob0N8A7Cgv30VRkkV4RZ0ITF4Zz0A7w=
+    networks:
+      - mynetwork
+
+networks:
+  mynetwork:
+
+volumes:
+  cosmosdbdata:
