@@ -7,13 +7,13 @@ services:
       AZURE_COSMOS_EMULATOR_PARTITION_COUNT: 1
       AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE: "true"
     ports:
-      - "8081:8081" # Endpoint port
-      - "10250:10250" # Direct TCP port
+      - "8081:8081"
+      - "10250:10250"
     volumes:
       - cosmosdbdata:/data
     networks:
       - mynetwork
-
+  
   app:
     build:
       context: .
@@ -23,13 +23,14 @@ services:
     depends_on:
       - cosmosdb-emulator
     environment:
-      - CosmosDb__EndpointUri=https://localhost:8081
-      - CosmosDb__PrimaryKey=C2y6yDjf5/R+ob0N8A7Cgv30VRkkV4RZ0ITF4Zz0A7w=
+      - CosmosDb__EndpointUri=https://cosmosdb-emulator:8081
+      - CosmosDb__PrimaryKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==
     networks:
       - mynetwork
 
 networks:
   mynetwork:
+    driver: bridge
 
 volumes:
   cosmosdbdata:
