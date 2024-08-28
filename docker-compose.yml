@@ -13,7 +13,16 @@ services:
       - cosmosdbdata:/data
     networks:
       - mynetwork
-  
+
+  ping_listener:
+    build:
+      context: ./ping_listener
+      dockerfile: Dockerfile
+    ports:
+      - "5001:80"
+    networks:
+      - mynetwork
+
   app:
     build:
       context: .
@@ -22,9 +31,7 @@ services:
       - "5000:8080"
     depends_on:
       - cosmosdb-emulator
-    environment:
-      - CosmosDb__EndpointUri=https://cosmosdb-emulator:8081
-      - CosmosDb__PrimaryKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==
+      - ping_listener
     networks:
       - mynetwork
 

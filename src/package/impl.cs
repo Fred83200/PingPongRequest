@@ -7,8 +7,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Azure.Cosmos;
 using Microsoft.AspNetCore.Http;
-using System.Net.Security;
-using System.Security.Cryptography.X509Certificates;
 using Newtonsoft.Json;
 
 namespace PingPong
@@ -63,9 +61,12 @@ namespace PingPong
                 throw new Exception("Could not connect to Cosmos DB Emulator after multiple attempts.");
             });
 
+            // Register HttpClient and PingService
+            builder.Services.AddHttpClient<PingService>();
+
             var app = builder.Build();
 
-            app.MapPost("/ping", async (HttpContext context, CosmosClient cosmosClient) =>
+            app.MapPost("/ping", async (HttpContext context, CosmosClient cosmosClient, PingService pingService) =>
             {
                 var userId = Guid.NewGuid().ToString();
                 var timestamp = DateTime.UtcNow;
@@ -80,9 +81,17 @@ namespace PingPong
                     Timestamp = timestamp
                 };
 
+                // Store the initial ping request in Cosmos DB
                 await container.Container.CreateItemAsync(pingRecord, new PartitionKey(pingRecord.Id));
 
-                return Results.Ok(new { message = "pong", userId, timestamp });
+                // Send a request to the ping_listener service
+                var pongResponse = await pingService.SendPingAsync();
+
+                // Update the ping record with the pong response and store it again in Cosmos DB
+                pingRecord.Pong = pongResponse;
+                await container.Container.UpsertItemAsync(pingRecord, new PartitionKey(pingRecord.Id));
+
+                return Results.Ok(new { message = pongResponse, userId, timestamp });
             });
 
             app.Run();
@@ -91,8 +100,25 @@ namespace PingPong
 
     public class PingRecord
     {
-        [JsonProperty("id")] // Add this to ensure the property is serialized correctly
+        [JsonProperty("id")] // Ensure the property is serialized correctly
         public string Id { get; set; }
         public DateTime Timestamp { get; set; }
+        public string? Pong { get; set; } // Add a property to store the pong response
+    }
+
+    public class PingService
+    {
+        private readonly HttpClient _httpClient;
+
+        public PingService(HttpClient httpClient)
+        {
+            _httpClient = httpClient;
+        }
+
+        public async Task<string> SendPingAsync()
+        {
+            var response = await _httpClient.GetStringAsync("http://ping_listener:80/ping");
+            return response;
+        }
     }
 }
