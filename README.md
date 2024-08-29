@@ -3,6 +3,9 @@ This is a simple Ping Pong micro-service in C# .NET
 - The ping_listener service is a simple responder: It only responds to ping requests with a pong.
 - CosmosDB stores the interactions: Both the ping request and the pong response are stored in CosmosDB for later retrieval.
 
+![image](https://github.com/user-attachments/assets/2337b786-983a-4f70-a7ba-977398b7fdd9)
+
+
 - The services are orchestrated using Docker Compose. The docker-compose.yml file defines the three services (app, ping_listener, and cosmosdb-emulator), their ports, and how they are networked together.
 - Docker Compose sets up a bridge network (mynetwork) that allows the services to communicate with each other by their service names. For example, the app service can reach the ping_listener service by sending requests to http://ping_listener.
 
